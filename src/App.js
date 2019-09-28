@@ -1,6 +1,7 @@
 import React from 'react';
 import {Container, Button} from 'reactstrap';
 import Map from "./Map";
+import {estimatePointStrengthFromArray} from './Utils'
 
 
 export default class App extends React.Component {
@@ -8,7 +9,8 @@ export default class App extends React.Component {
         heatmapData: [],
         map: null,
         google: null,
-        heatmapLayer: null
+        heatmapLayer: null,
+        pointOfInterest: {lat: 37.784, lng: -122.444}
     };
     
     setHeatmapData = () => {
@@ -16,25 +18,34 @@ export default class App extends React.Component {
         this.setState({
             heatmapData: [
                 {lat: 37.782, lng: -122.447, weight: 1000},
-                {lat: 37.782, lng: -122.445, weight: 800},
+                {lat: 37.782, lng: -122.445, weight: 1200},
                 {lat: 37.782, lng: -122.443, weight: 1000},
-            ]
+                {lat: 37.782, lng: -122.441, weight: 1000},
+                {lat: 37.782, lng: -122.439, weight: 700},
+                {lat: 37.786, lng: -122.443, weight: 1000},
+                {lat: 37.786, lng: -122.447, weight: 1000},
+                {lat: 37.786, lng: -122.445, weight: 500},
+                {lat: 37.786, lng: -122.441, weight: 1000},
+                {lat: 37.786, lng: -122.439, weight: 1000},
+            ],
+            pointOfInterest: {lat: 37.783, lng: -122.444}
         })
     };
     
-    getMapsAndHeatmapLayer = (map, google, heatmapLayer) => {
+    getMapsAndHeatmapLayer = (map, overlay, google, heatmapLayer) => {
         this.setState({
             map,
+            overlay,
             google,
             heatmapLayer
         });//, () => {console.log('maps', this.state.maps);});// OK
     };
     
     getHeatValueFromXY = (x, y) => {
-        if (!this.state.map || !this.state.google || !this.state.heatmapLayer) return -1000;
-        const map = this.state.map;
-        console.log('map', map.getProjection());
-        const cursorGeoCoord = map.getProjection().fromContainerPixelToLatLng(
+        if (!this.state.overlay || !this.state.google || !this.state.heatmapLayer) return -1000;
+        const overlay = this.state.overlay;
+        console.log('overlay', overlay.getProjection());
+        const cursorGeoCoord = overlay.getProjection().fromContainerPixelToLatLng(
             new this.state.google.maps.Point(x, y)
         );
         console.log('cursorGeoCoord', cursorGeoCoord.lat(), cursorGeoCoord.lng());
@@ -47,6 +58,38 @@ export default class App extends React.Component {
         //return {cursorGeoCoord.Lat, cursorGeoCoord.Lng};
     };
     
+    getGeoPositionFromXY = (x, y) => {
+        if (!this.state.overlay || !this.state.google || !this.state.heatmapLayer) return -1000;
+        const overlay = this.state.overlay;
+        console.log('overlay', overlay.getProjection());
+        const cursorGeoCoord = overlay.getProjection().fromContainerPixelToLatLng(
+            new this.state.google.maps.Point(x, y)
+        );
+        return cursorGeoCoord;
+    };
+    
+    definePoint = () => {
+        const strength = estimatePointStrengthFromArray(this.state.pointOfInterest, this.state.heatmapData);
+        new this.state.google.maps.Marker({
+            position: this.state.pointOfInterest,
+            map: this.state.map,
+            title: strength.toString()
+        });
+    };
+    
+    setMarker = (x, y) => {
+        const geoPosition = this.getGeoPositionFromXY(x, y);
+        const strength = estimatePointStrengthFromArray(
+            {lat: geoPosition.lat(), lng: geoPosition.lng()},
+            this.state.heatmapData
+        );
+        new this.state.google.maps.Marker({
+            position: geoPosition,
+            map: this.state.map,
+            title: strength.toString()
+        });
+    };
+    
     render() {
         return (
             
@@ -57,7 +100,8 @@ export default class App extends React.Component {
                 <div
                     onClick={(e) => {
                         console.log('click', e.nativeEvent.offsetX, e.nativeEvent.offsetY);
-                        this.getHeatValueFromXY(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+                        //this.getHeatValueFromXY(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+                        this.setMarker(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
                     }}
                     style={{
                         height: "400px",
@@ -69,9 +113,10 @@ export default class App extends React.Component {
                     {/*<button onPress=></button>*/}
                     <Button color="primary" onClick={this.setHeatmapData}>Set Data</Button>
                     {/*<p>Temp: {this.getTempOfCursorCoords()}</p>*/}
-                    <Button onClick={() => {
+                    <Button color="info" onClick={() => {
                         console.log('getTempOfCursorCoords', this.getTempOfCursorCoords());
-                    }}/>
+                    }}>Get temp</Button>
+                    <Button color="info" onClick={this.definePoint}>Define</Button>
                 </div>
             </Container>
         

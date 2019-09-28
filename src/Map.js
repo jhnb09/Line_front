@@ -14,6 +14,12 @@ const gMapLibs = ["visualization"];
 
 
 export default class Map extends React.Component {
+    state = {
+        response: null,
+        travelMode: 'DRIVING',
+        origin: '',
+        destination: '',
+    }
     
     getHeatmapPoints = () => {
         if(!this.google || !this.google.maps || !this.props.heatmapData) return [];
@@ -59,7 +65,7 @@ export default class Map extends React.Component {
         overlay.draw = function() {};
         overlay.setMap(this.map);
         
-        this.props.onLoadCB(overlay, this.google, heatmapLayer);
+        this.props.onLoadCB(this.map, overlay, this.google, heatmapLayer);
     };
     
     render() {
@@ -86,23 +92,33 @@ export default class Map extends React.Component {
                     //mapTypeId: 'roadmap'
 
                 >
-                    <HeatmapLayer
-                        // optional
-                        onLoad={this.onLoadHeatmap}
-                        // optional
-                        onUnmount={heatmapLayer => {
-                            console.log('HeatmapLayer onUnmount heatmapLayer: ', heatmapLayer)
-                        }}
-                        // required
-                        //data={inArr}
-                        data={this.getHeatmapPoints()}
+                    <DirectionsService
+                        // eslint-disable-next-line react-perf/jsx-no-new-object-as-prop
                         options={{
-                            //dissipating: true,
-                            //maxIntensity: 1000,
-                            //radius: 2,
-                            opacity: 0.8
+                            destination: this.state.destination,
+                            origin: this.state.origin,
+                            travelMode: this.state.travelMode,
                         }}
+                        callback={this.directionsCallback}
                     />
+                    
+                    {/*<HeatmapLayer*/}
+                        {/*// optional*/}
+                        {/*onLoad={this.onLoadHeatmap}*/}
+                        {/*// optional*/}
+                        {/*onUnmount={heatmapLayer => {*/}
+                            {/*console.log('HeatmapLayer onUnmount heatmapLayer: ', heatmapLayer)*/}
+                        {/*}}*/}
+                        {/*// required*/}
+                        {/*//data={inArr}*/}
+                        {/*data={this.getHeatmapPoints()}*/}
+                        {/*options={{*/}
+                            {/*//dissipating: true,*/}
+                            {/*//maxIntensity: 1000,*/}
+                            {/*//radius: 2,*/}
+                            {/*opacity: 0.8*/}
+                        {/*}}*/}
+                    {/*/>*/}
                 </GoogleMap>
             </LoadScript>
         )
