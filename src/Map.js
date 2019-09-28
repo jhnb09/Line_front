@@ -83,6 +83,7 @@ export default class Map extends React.Component {
                     // required
                     center={center}
                     onLoad={this.onLoadMaps}
+                    //mapTypeId: 'roadmap'
 
                 >
                     <HeatmapLayer

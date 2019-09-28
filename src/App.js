@@ -38,6 +38,11 @@ export default class App extends React.Component {
             new this.state.google.maps.Point(x, y)
         );
         console.log('cursorGeoCoord', cursorGeoCoord.lat(), cursorGeoCoord.lng());
+        //console.log('heat', this.state.heatmapLayer.getData());
+        console.log('heat', this.state.heatmapLayer.getMap());
+        // console.log('heat', this.state.heatmapLayer.getData().filter(item => {
+        //     if (item.location.lat() && item.location.lng());
+        // }));
         //console.log('cursorGeoCoord', cursorGeoCoord);
         //return {cursorGeoCoord.Lat, cursorGeoCoord.Lng};
     };
