@@ -1,7 +1,10 @@
 import React from 'react';
-import {Container, Button} from 'reactstrap';
+import {Container, Button, Dropdown, DropdownItem, DropdownMenu, DropdownToggle} from 'reactstrap';
 import Map from "./Map";
-import {estimatePointStrengthFromArray} from './Utils'
+import {estimatePointStrengthFromArray} from './Utils';
+import axios from 'axios';
+
+import {hardcodedRouteDataSets, hardcodedHeatmapDataSets} from './dataSets';
 
 
 function getRandomCelluarPower() {
@@ -17,46 +20,38 @@ export default class App extends React.Component {
         map: null,
         google: null,
         heatmapLayer: null,
-        pointOfInterest: {lat: 37.784, lng: -122.444}
+        pointOfInterest: {lat: 37.784, lng: -122.444},
+        
+        dropdownOpen: false,
+        dropDownValue: 'выберете маршрут'
     };
     
-    hardcodedRouteData = [
-        {lat: 55.76561921521052, lng: 49.10824788530567, weight: -102},
-        {lat: 55.77428091700512, lng: 49.10469822355708, weight: -117},
-        {lat: 55.77963971079378, lng: 49.10170707453517, weight: -113},
-        {lat: 55.78186003195261, lng: 49.10123500574855, weight: -102},
-        {lat: 55.784987725023896, lng: 49.10149249781398, weight: -91},
-        {lat: 55.78925873114895, lng: 49.09891757715968, weight: -87},
-        {lat: 55.793214266391224, lng: 49.09587301265856, weight: -84},
-        {lat: 55.79519123017344, lng: 49.09282602321764, weight: -102},
-        {lat: 55.79695231393624, lng: 49.08304132473131, weight: -94},
-        {lat: 55.798351474399766, lng: 49.075445308801136, weight: -97},
-        {lat: 55.80052402397739, lng: 49.0695832597803, weight: -107},
-        {lat: 55.8043109431034, lng: 49.05966981526126, weight: -91},
-        {lat: 55.80584264548399, lng: 49.055034958083525, weight: -107},
-        {lat: 55.80586676385855, lng: 49.050271354873075, weight: -118},
-        {lat: 55.805336156166454, lng: 49.044263206679716, weight: -113},
-        {lat: 55.80388900752057, lng: 49.03598054524173, weight: -104},
-        {lat: 55.80285185123387, lng: 49.03166685462065, weight: -104},
-        {lat: 55.80183878818784, lng: 49.026903251410204, weight: -117},
-        {lat: 55.801356367948834, lng: 49.02380718274844, weight: -107},
-        {lat: 55.80130812559621, lng: 49.019944801767, weight: -90},
-        {lat: 55.80125988318376, lng: 49.01458038373721, weight: -100},
-        {lat: 55.80128928407374, lng: 49.00960220380557, weight: -93}
-    ];
+    manualRoute = [];
     
-    hardcodedHeatmapData = [
-        {lat: 37.782, lng: -122.447, weight: 1000},
-        {lat: 37.782, lng: -122.445, weight: 1200},
-        {lat: 37.782, lng: -122.443, weight: 1000},
-        {lat: 37.782, lng: -122.441, weight: 1000},
-        {lat: 37.782, lng: -122.439, weight: 700},
-        {lat: 37.786, lng: -122.443, weight: 1000},
-        {lat: 37.786, lng: -122.447, weight: 1000},
-        {lat: 37.786, lng: -122.445, weight: 500},
-        {lat: 37.786, lng: -122.441, weight: 1000},
-        {lat: 37.786, lng: -122.439, weight: 1000},
-    ];
+    toggle = () => {
+        this.setState(prevState => ({
+            dropdownOpen: !prevState.dropdownOpen
+        }));
+    };
+    
+    changeValue = (e) => {
+        this.setState({dropDownValue: e.currentTarget.textContent});
+        
+        console.log('e', e.currentTarget.attributes['index'].value);
+        
+        this.setState({
+                routeData: hardcodedRouteDataSets[e.currentTarget.attributes['index'].value]
+            },
+            //() => console.log(hardcodedRouteDataSets[e.currentTarget.index])
+            //() => console.log(this.state.routeData)
+        );
+    };
+    
+    mapDivRef = React.createRef();
+    
+    //hardcodedRouteData = [];
+    
+    //hardcodedHeatmapData = [];
     
     setHeatmapData = () => {
         console.log('set data');
@@ -130,7 +125,7 @@ export default class App extends React.Component {
             map: this.state.map,
             title: strength.toString()
         });
-        //this.hardcodedRoute.push({lat: geoPosition.lat(), lng: geoPosition.lng(), weight: strength});
+        this.manualRoute.push({lat: geoPosition.lat(), lng: geoPosition.lng(), weight: strength});
     };
     
     onClickMapCanvas = (x, y) => {
@@ -139,8 +134,68 @@ export default class App extends React.Component {
     };
     
     logPoints = () => {
-        console.log('coords:', this.hardcodedRoute);
+        console.log('coords:', this.manualRoute);
     };
+    
+    onClickGetHeatmap = (value = 0) => {
+        this.setState({
+            heatmapData: hardcodedHeatmapDataSets[0]
+        });
+        return;
+        
+        /*const params = {
+            lat1: this.state.mapGeoRect.lat1,
+            lng1: this.state.mapGeoRect.lng1,
+            lat2: this.state.mapGeoRect.lat2,
+            lng2: this.state.mapGeoRect.lng2,
+            operator: 'YOTA'
+        };*/
+        
+        const dx = (this.mapDivRef.current.offsetWidth);
+        const dy = (this.mapDivRef.current.offsetHeight);
+        
+        const geoPosition1 = this.getGeoPositionFromXY(0, 0);
+        const geoPosition2 = this.getGeoPositionFromXY(dx, dy);
+        
+        
+        const params = {
+            lat1: geoPosition1.lat(),
+            lng1: geoPosition1.lng(),
+            lat2: geoPosition2.lat(),
+            lng2: geoPosition2.lng(),
+            carrierName: 'YOTA'
+        };
+        
+        axios
+            .get('/api/items', params)
+            .then(res => {
+                this.setState({
+                    heatmapData: res.data
+                })
+            });
+    };
+    
+    onClickGetRoute = (value = 0) => {
+        this.setState({
+            routeData: hardcodedRouteDataSets[3]
+        });
+        return;
+        
+        const params = {
+            id: value,
+            carrierName: 'YOTA'
+        };
+        
+        axios
+            .get('/api/routes', params)
+            .then(res => {
+                this.setState({
+                    routeData: res.data
+                })
+            });
+            
+    };
+    
     
     render() {
         return (
@@ -150,15 +205,20 @@ export default class App extends React.Component {
                     Line APP
                 </h1>
                 <div
+                    className='map-wrapper'
+                    ref={this.mapDivRef}
                     onClick={(e) => {
-                        //console.log('click', e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+                        console.log('click', e.nativeEvent.offsetX, e.nativeEvent.offsetY);
                         //this.getHeatValueFromXY(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
-                        //this.setMarker(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+                        this.setMarker(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
                     }}
-                    /*style={{
-                        height: "400px",
-                        width: "800px"
-                    }}*/>
+                    style={{
+                        display: 'flex',
+                        //height: "400px",
+                        //width: "800px"
+                        width: '100%',
+                        height: '100%'
+                    }}>
                     <Map
                         heatmapData={this.state.heatmapData}
                         routeData={this.state.routeData}
@@ -166,16 +226,30 @@ export default class App extends React.Component {
                         //onClickMap={this.onClickMapCanvas.bind(this)}
                     />
                 </div>
-                <div>
+                <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-around', marginTop: '5vh'}}>
                     {/*<button onPress=></button>*/}
-                    <Button color="primary" onClick={this.setHeatmapData}>set heatmap</Button>
+                    <Button color="primary" onClick={this.onClickGetRoute}>Загрузить путь с сервера</Button>
+                    <Button color="primary" onClick={this.onClickGetHeatmap}>Загрузить тепловую катру с сервера</Button>
                     {/*<p>Temp: {this.getTempOfCursorCoords()}</p>*/}
-                    <Button color="info" onClick={() => {
-                        console.log('getTempOfCursorCoords', this.getTempOfCursorCoords());
-                    }}>Get temp</Button>
-                    <Button color="info" onClick={this.definePoint}>Define</Button>
+                    {/*<Button color="info" onClick={() => {*/}
+                        {/*console.log('getTempOfCursorCoords', this.getTempOfCursorCoords());*/}
+                    {/*}}>Get temp</Button>*/}
+                    {/*<Button color="info" onClick={this.definePoint}>Define</Button>*/}
+                    
+                    {/*<Button color="primary" onClick={this.setRouteData}>set route</Button>*/}
+                    <Dropdown isOpen={this.state.dropdownOpen} toggle={this.toggle}>
+                        <DropdownToggle caret>
+                            {this.state.dropDownValue}
+                        </DropdownToggle>
+                        <DropdownMenu>
+                            <DropdownItem onClick={this.changeValue} index={0}>Путь 1</DropdownItem>
+                            <DropdownItem onClick={this.changeValue} index={1}>Путь 2</DropdownItem>
+                            <DropdownItem onClick={this.changeValue} index={2}>Путь 3</DropdownItem>
+                            <DropdownItem onClick={this.changeValue} index={3}>Путь 4</DropdownItem>
+                        </DropdownMenu>
+                    </Dropdown>
+    
                     <Button color="danger" onClick={this.logPoints}>Log</Button>
-                    <Button color="primary" onClick={this.setRouteData}>set route</Button>
                 </div>
             </Container>
         

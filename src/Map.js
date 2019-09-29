@@ -94,10 +94,28 @@ export default class Map extends React.Component {
     };
     
     
+    scaleWeightToCelluar(weight) {
+        // -120db: 0, -84db:max
+        // 0            1000
+        const D = 120 - 84;
+        let weight1 = (weight + 84) + (D); //-> -36 to 0 -> 0 to 36
+        //
+        console.log('weight1', weight1);
+        console.log('1000*(weight1/D', 1000*(weight1/D));
+        return 1000*(weight1/D);
+        
+        
+    }
+    
     getHeatmapPoints = () => {
+        
+        
         if (!this.google || !this.google.maps || !this.props.heatmapData) return [];
         return this.props.heatmapData.map(item =>
-            ({location: new this.google.maps.LatLng(item.lat, item.lng), weight: item.weight})
+            ({
+                location: new this.google.maps.LatLng(item.lat, item.lng),
+                weight: this.scaleWeightToCelluar(item.weight)
+            })
         );
     };
     
@@ -256,7 +274,7 @@ export default class Map extends React.Component {
                 googleMapsApiKey="AIzaSyC4RjQvK8Hnp65hjd8qr19JqDU8KKvYIQQ"
                 libraries={gMapLibs}
             >
-                <div className='map'>
+                <div className='map' style={{display: 'flex', width: '100%', height: '100%'}}>
                     {/*<div className='map-settings'>*/}
                     {/*<hr className='mt-0 mb-3'/>*/}
                     {/**/}
@@ -358,6 +376,7 @@ export default class Map extends React.Component {
                     <div
                         className='map-container'
                         //onClick={this.onClickMap}
+                        style={{display: 'flex', width: '100%', height: '100%'}}
                     >
                         <GoogleMap
                             // optional
@@ -365,8 +384,12 @@ export default class Map extends React.Component {
                             
                             // required to set height and width either through mapContainerClassName, either through mapContainerStyle prop
                             mapContainerStyle={{
-                                height: "400px",
-                                width: "800px"
+                                //height: "400px",
+                                //width: "800px",
+                                display: 'flex',
+                                width: '100vw',
+                                height: '80vh',
+                                //minHeight: '800px'
                             }}
                             // required
                             zoom={11}
@@ -448,7 +471,7 @@ export default class Map extends React.Component {
                                 options={{
                                     //dissipating: true,
                                     //maxIntensity: 1000,
-                                    //radius: 2,
+                                    radius: 60,
                                     opacity: 0.8
                                 }}
                             />
